@@ -80,18 +80,20 @@ class GenMat(bpy.types.Operator):
 
     def execute(self, context):
         if context.scene.combine_mode == 'single':
-            self.execute_core(context, context.scene.objects, 'combined', (1024, 512))
+            self.execute_core(context, context.scene.objects, '結合', (1024, 512))
         elif context.scene.combine_mode == 'multi':
-            body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '口', '眼球', '耳', '顔']
-            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_body', (512, 512))
-            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names], 'combined_cloth', (512, 256))
+            body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '耳']
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], '結合_体', (512, 512))
+            face_object_names = ['口', '眼球', '顔']
+            # self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_face', (256, 256))
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names and obj.name not in face_object_names], '結合_服', (512, 256))
 
         self.apply_modifier(context)
         self.join_objects(context)
 
         return{'FINISHED'}
 
-    def execute_core(self, context, objects, texture_name, size):
+    def execute_core(self, context, objects, texture_name, size, prefix_dir = None):
         start_time = time.time()
         files = []
         broken_materials = []
@@ -311,7 +313,8 @@ class GenMat(bpy.types.Operator):
                     context.object.active_material_index = [x.material.name for x in
                                                             context.object.material_slots].index(mater)
                     bpy.ops.object.material_slot_remove()
-        image.save(os.path.join(save_path, 'Textures', texture_name + '.png'))
+        final_image_path = os.path.join(save_path, 'Textures', prefix_dir, texture_name + '.png') if prefix_dir else os.path.join(save_path, 'Textures', texture_name + '.png')
+        image.save(final_image_path)
         for index in indexes:
             mat = bpy.data.materials[texture_name]
             mat.mat_index = index
@@ -320,7 +323,7 @@ class GenMat(bpy.types.Operator):
             mat.use_transparency = True
             mat.texture_slots[0].use_map_alpha = True
             tex = mat.texture_slots[0].texture
-            tex.image = bpy.data.images.load(os.path.join(save_path, 'Textures', texture_name + '.png'))
+            tex.image = bpy.data.images.load(final_image_path)
         for mesh in bpy.data.meshes:
             mesh.show_double_sided = True
         bpy.ops.shotariya.list_actions(action='GENERATE_MAT')

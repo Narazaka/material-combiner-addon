@@ -80,18 +80,18 @@ class GenMat(bpy.types.Operator):
 
     def execute(self, context):
         if context.scene.combine_mode == 'single':
-            self.execute_core(context, context.scene.objects, 'combined')
+            self.execute_core(context, context.scene.objects, 'combined', (1024, 512))
         elif context.scene.combine_mode == 'multi':
             body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '口', '眼球', '耳', '顔']
-            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_body')
-            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names], 'combined_cloth')
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_body', (512, 512))
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names], 'combined_cloth', (512, 256))
 
         self.apply_modifier(context)
         self.join_objects(context)
 
         return{'FINISHED'}
 
-    def execute_core(self, context, objects, texture_name):
+    def execute_core(self, context, objects, texture_name, size):
         start_time = time.time()
         files = []
         broken_materials = []
@@ -219,11 +219,6 @@ class GenMat(bpy.types.Operator):
         images = packer.fit()
         width = max([img['fit']['x'] + img['w'] for img in images])
         height = max([img['fit']['y'] + img['h'] for img in images])
-        size = (width, height)
-        if scn.combine_mode == 'single':
-            size = (1024, 512)
-        else:
-            size = (512, 512)
         if any(size) > 20000:
             self.report({'ERROR'}, 'Output Image Size way too big')
             return {'FINISHED'}

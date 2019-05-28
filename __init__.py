@@ -26,7 +26,7 @@ import os
 import sys
 import importlib
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__))) 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from bpy.props import *
 from bpy.app.handlers import persistent
@@ -46,7 +46,7 @@ bl_info = {
     'author': 'shotariya (shotariya#4269)',
     'location': 'View 3D > Tool Shelf > Shotariya-don',
     'description': 'Tool with some functions',
-    'version': [1, 1, 6, 3],
+    'version': [1, 1, 6, 2],
     'blender': (2, 79, 0),
     'wiki_url': 'https://github.com/Grim-es/material-combiner-addon/blob/master/README.md',
     'tracker_url': 'https://discordapp.com/users/275608234595713024',
@@ -275,7 +275,7 @@ class ExecuteMat(Operator):
 
     @classmethod
     def poll(cls, context):
-        return bpy.context.mode == 'OBJECT'
+        return bpy.context.object.mode == 'OBJECT'
 
     def show_message(self, context):
         def draw(self, context):
@@ -292,6 +292,97 @@ class ExecuteMat(Operator):
         context.window_manager.popup_menu(draw, title='Be careful', icon='INFO')
 
     def execute(self, context):
+        context.scene.combine_mode = 'multi'
+        self.show_message(context)
+        return {'FINISHED'}
+
+class ExecuteMat2(Operator):
+    bl_label = 'Combine Single'
+    bl_idname = 'shotariya.execute_mat2'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = 'shotariya'
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.object.mode == 'OBJECT'
+
+    def show_message(self, context):
+        def draw(self, context):
+            layout = self.layout
+            layout.separator()
+            layout.label('If you have transparent and non-transparent textures to combine')
+            layout.label('that may cause combined texture be full-transparent in Unity')
+            layout.label('instead combine them separately')
+            layout.separator()
+            layout.label('Combine transparent and non-transparent textures together if you are know what you do')
+            layout.separator()
+            layout.separator()
+            layout.operator('shotariya.gen_mat')
+        context.window_manager.popup_menu(draw, title='Be careful', icon='INFO')
+
+    def execute(self, context):
+        context.scene.combine_mode = 'single'
+        self.show_message(context)
+        return {'FINISHED'}
+
+class ExecuteMat3(Operator):
+    bl_label = 'Combine Single Mat 3 Tex'
+    bl_idname = 'shotariya.execute_mat3'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = 'shotariya'
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.object.mode == 'OBJECT'
+
+    def show_message(self, context):
+        def draw(self, context):
+            layout = self.layout
+            layout.separator()
+            layout.label('If you have transparent and non-transparent textures to combine')
+            layout.label('that may cause combined texture be full-transparent in Unity')
+            layout.label('instead combine them separately')
+            layout.separator()
+            layout.label('Combine transparent and non-transparent textures together if you are know what you do')
+            layout.separator()
+            layout.separator()
+            layout.operator('shotariya.gen_mat')
+        context.window_manager.popup_menu(draw, title='Be careful', icon='INFO')
+
+    def execute(self, context):
+        context.scene.combine_mode = 'multi3'
+        self.show_message(context)
+        return {'FINISHED'}
+
+class ExecuteMat4(Operator):
+    bl_label = 'Combine Objects'
+    bl_idname = 'shotariya.execute_mat4'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'TOOLS'
+    bl_category = 'shotariya'
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.object.mode == 'OBJECT'
+
+    def show_message(self, context):
+        def draw(self, context):
+            layout = self.layout
+            layout.separator()
+            layout.label('If you have transparent and non-transparent textures to combine')
+            layout.label('that may cause combined texture be full-transparent in Unity')
+            layout.label('instead combine them separately')
+            layout.separator()
+            layout.label('Combine transparent and non-transparent textures together if you are know what you do')
+            layout.separator()
+            layout.separator()
+            layout.operator('shotariya.gen_mat')
+        context.window_manager.popup_menu(draw, title='Be careful', icon='INFO')
+
+    def execute(self, context):
+        context.scene.combine_mode = 'obj_only'
         self.show_message(context)
         return {'FINISHED'}
 
@@ -335,6 +426,18 @@ class ShotariyaMaterials(Panel):
         else:
             combined_icon = 'BOOKMARKS'
         split.operator('shotariya.combined_folder', text='', icon=combined_icon)
+        row = layout.row()
+        split = row.split(percentage=0.8, align=True)
+        split.scale_y = 1.3
+        split.operator('shotariya.execute_mat2', icon='SOLO_ON')
+        row = layout.row()
+        split = row.split(percentage=0.8, align=True)
+        split.scale_y = 1.3
+        split.operator('shotariya.execute_mat3', icon='SOLO_ON')
+        row = layout.row()
+        split = row.split(percentage=0.8, align=True)
+        split.scale_y = 1.3
+        split.operator('shotariya.execute_mat4', icon='SOLO_ON')
 
 
 class ShotariyaTextures(Panel):
@@ -413,6 +516,9 @@ classes = (
     DataGroup,
     ShotariyaActions,
     ExecuteMat,
+    ExecuteMat2,
+    ExecuteMat3,
+    ExecuteMat4,
     one_mat.GenMat,
     uv_fixer.FixUV,
     uv_splitter.SplitUV,
@@ -430,6 +536,7 @@ def register():
     Material.to_tex = BoolProperty(description='Add texture to save', default=False)
     Scene.clear_mats = BoolProperty(description='Clear materials checkbox', default=True)
     Scene.combined_path = StringProperty(description='Select a path for combined texture saving', default='')
+    Scene.combine_mode = StringProperty(description='combine mode', default='')
     Scene.shotariya_tex = CollectionProperty(type=DataGroup)
     Scene.shotariya_tex_idx = IntProperty(default=0)
     Scene.clear_texs = BoolProperty(description='Clear textures checkbox', default=True)
@@ -453,6 +560,7 @@ def unregister():
     del Material.to_tex
     del Scene.clear_mats
     del Scene.combined_path
+    del Scene.combine_mode
     del Scene.shotariya_tex
     del Scene.shotariya_tex_idx
     del Scene.clear_texs

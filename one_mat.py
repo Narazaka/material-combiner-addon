@@ -68,6 +68,12 @@ class GenMat(bpy.types.Operator):
                     obj.select = True
                 else:
                     obj.select = False
+        elif context.scene.combine_mode == 'multi3':
+            for obj in context.scene.objects:
+                if obj.type != 'MESH' or obj.name.endswith('裏面'):
+                    obj.select = False
+                else:
+                    obj.select = True
         else:
             select_objs = ['口', '耳', '顔', '眼球']
             for obj in context.scene.objects:
@@ -81,7 +87,7 @@ class GenMat(bpy.types.Operator):
     def execute(self, context):
         if context.scene.combine_mode == 'single':
             self.execute_core(context, context.scene.objects, '結合', (1024, 512))
-        elif context.scene.combine_mode == 'multi':
+        elif context.scene.combine_mode == 'multi' or context.scene.combine_mode == 'multi3':
             body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '耳']
             self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], '結合_体', (512, 512))
             face_object_names = ['口', '眼球', '顔']

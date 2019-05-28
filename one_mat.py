@@ -26,9 +26,8 @@ import os
 import time
 import random
 import pathlib
-from . Packer import Packer   
-from PIL import Image
-
+from . Packer import Packer
+from . PIL import Image
 
 class L(list):
     def __new__(self, *args, **kwargs):
@@ -56,7 +55,43 @@ class GenMat(bpy.types.Operator):
     def poll(cls, context):
         return bpy.context.mode == 'OBJECT'
 
+    def apply_modifier(self, context):
+        for obj in bpy.data.objects:
+            if 'ミラー' in obj.modifiers:
+                self.report({'INFO'}, obj.name + ' apply')
+                Func_Apply_Modifier(self, context, target_object = obj, target_modifiers = ['ミラー'])
+
+    def join_objects(self, context):
+        if context.scene.combine_mode == 'single':
+            for obj in context.scene.objects:
+                if obj.type == 'MESH':
+                    obj.select = True
+                else:
+                    obj.select = False
+        else:
+            select_objs = ['口', '耳', '顔', '眼球']
+            for obj in context.scene.objects:
+                if obj.name in select_objs:
+                    obj.select = True
+                else:
+                    obj.select = False
+        context.scene.objects.active = context.scene.objects['顔']
+        bpy.ops.object.join()
+
     def execute(self, context):
+        if context.scene.combine_mode == 'single':
+            self.execute_core(context, context.scene.objects, 'combined')
+        elif context.scene.combine_mode == 'multi':
+            body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '口', '眼球', '耳', '顔']
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_body')
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names], 'combined_cloth')
+
+        self.apply_modifier(context)
+        self.join_objects(context)
+
+        return{'FINISHED'}
+
+    def execute_core(self, context, objects, texture_name):
         start_time = time.time()
         files = []
         broken_materials = []
@@ -71,7 +106,7 @@ class GenMat(bpy.types.Operator):
             self.report({'ERROR'}, 'Please select Folder for Combined Texture')
             return {'FINISHED'}
         bpy.ops.shotariya.uv_fixer()
-        for obj in scn.objects:
+        for obj in objects:
             if obj.type == 'MESH':
                 if not obj.data.uv_layers.active or obj.hide:
                     continue
@@ -106,7 +141,7 @@ class GenMat(bpy.types.Operator):
                                    '    • Save textures by UVs\n'
                                    '    • Pack UVs by splitting mesh\n'.format(broken_materials))
             return {'FINISHED'}
-        for obj in scn.objects:
+        for obj in objects:
             if obj.type == 'MESH':
                 if not obj.data.uv_layers.active or obj.hide:
                     continue
@@ -152,7 +187,7 @@ class GenMat(bpy.types.Operator):
         combined_copies = 0
         if len(files) < 2:
             if copies:
-                for obj in scn.objects:
+                for obj in objects:
                     if obj.type == 'MESH':
                         if not obj.data.uv_layers.active or obj.hide:
                             continue
@@ -185,6 +220,10 @@ class GenMat(bpy.types.Operator):
         width = max([img['fit']['x'] + img['w'] for img in images])
         height = max([img['fit']['y'] + img['h'] for img in images])
         size = (width, height)
+        if scn.combine_mode == 'single':
+            size = (1024, 512)
+        else:
+            size = (512, 512)
         if any(size) > 20000:
             self.report({'ERROR'}, 'Output Image Size way too big')
             return {'FINISHED'}
@@ -197,7 +236,7 @@ class GenMat(bpy.types.Operator):
                                          img['fit']['y'],
                                          img['fit']['x'] + img['w'],
                                          img['fit']['y'] + img['h']))
-        for obj in scn.objects:
+        for obj in objects:
             if obj.type == 'MESH':
                 if not obj.data.uv_layers.active or obj.hide:
                     continue
@@ -210,12 +249,12 @@ class GenMat(bpy.types.Operator):
                         mat = mat_slot.material
                         if mat:
                             if mat.to_combine:
-                                mat_name = 'combined_material_id{}_{}'.format(mat.mat_index, unique_id)
+                                mat_name = texture_name
                                 if mat_name not in obj.data.materials:
                                     if mat_name not in bpy.data.materials:
                                         material = bpy.data.materials.new(name=mat_name)
                                         indexes.append(mat.mat_index)
-                                        tex_name = 'combined_texture_{}'.format(unique_id)
+                                        tex_name = texture_name
                                         if tex_name not in bpy.data.textures:
                                             texture = bpy.data.textures.new(tex_name, 'IMAGE')
                                         else:
@@ -231,7 +270,7 @@ class GenMat(bpy.types.Operator):
                 for img in images:
                     for i in range(mat_len):
                         mat = obj.material_slots[i].material
-                        mat_name = 'combined_material_id{}_{}'.format(mat.mat_index, unique_id)
+                        mat_name = texture_name
                         tex_slot = False
                         for j in range(len(mat.texture_slots)):
                             if mat.texture_slots[j]:
@@ -277,16 +316,16 @@ class GenMat(bpy.types.Operator):
                     context.object.active_material_index = [x.material.name for x in
                                                             context.object.material_slots].index(mater)
                     bpy.ops.object.material_slot_remove()
-        image.save(os.path.join(save_path, 'combined_image_' + unique_id + '.png'))
+        image.save(os.path.join(save_path, 'Textures', texture_name + '.png'))
         for index in indexes:
-            mat = bpy.data.materials['combined_material_id{}_{}'.format(index, unique_id)]
+            mat = bpy.data.materials[texture_name]
             mat.mat_index = index
             mat.use_shadeless = True
             mat.alpha = 0
             mat.use_transparency = True
             mat.texture_slots[0].use_map_alpha = True
             tex = mat.texture_slots[0].texture
-            tex.image = bpy.data.images.load(os.path.join(save_path, 'combined_image_' + unique_id + '.png'))
+            tex.image = bpy.data.images.load(os.path.join(save_path, 'Textures', texture_name + '.png'))
         for mesh in bpy.data.meshes:
             mesh.show_double_sided = True
         bpy.ops.shotariya.list_actions(action='GENERATE_MAT')
@@ -299,3 +338,162 @@ class GenMat(bpy.types.Operator):
             return {'FINISHED'}
         self.report({'INFO'}, 'Materials were combined.')
         return{'FINISHED'}
+
+
+
+
+
+# Apply Modifier https://sites.google.com/site/matosus304blendernotes/home/download#apply_modifier
+
+#Copyright (c) 2014 mato.sus304(mato.sus304@gmail.com)
+#
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
+
+######################################################
+def Clear_Shape_Keys(Name):
+    obj = bpy.context.active_object
+    if obj.data.shape_keys == None:
+        return True
+
+    obj.active_shape_key_index = len(obj.data.shape_keys.key_blocks)-1
+    while len(obj.data.shape_keys.key_blocks)>1:
+        #print(obj.data.shape_keys.key_blocks[obj.active_shape_key_index])
+
+        if obj.data.shape_keys.key_blocks[obj.active_shape_key_index].name == Name:
+            obj.active_shape_key_index = 0
+            #print(Name)
+        else:
+            bpy.ops.object.shape_key_remove()
+
+    bpy.ops.object.shape_key_remove()
+
+def Clone_Object(Obj):
+    tmp_obj = Obj.copy()
+    tmp_obj.name = "applymodifier_tmp_%s"%(Obj.name)
+    tmp_obj.data = tmp_obj.data.copy()
+    tmp_obj.data.name = "applymodifier_tmp_%s"%(Obj.data.name)
+    bpy.context.scene.objects.link(tmp_obj)
+    return tmp_obj
+
+def Delete_Object(Obj):
+    if Obj.data.users == 1:
+        Obj.data.user_clear()
+    for scn in bpy.data.scenes:
+        try:
+            bpy.context.scene.objects.unlink(Obj)
+        except:
+            pass
+
+######################################################
+
+def Func_Apply_Modifier(self, context, target_object = None, target_modifiers = None):
+    if target_object == None:
+        obj_src = bpy.context.active_object
+    else:
+        obj_src = target_object
+
+    if len(obj_src.modifiers) == 0:
+        self.report({'INFO'}, obj_src.name + ' skip no mod')
+        #if object has no modifier then skip
+        return True
+
+    #make single user
+    if obj_src.data.users != 1:
+        obj_src.data = obj_src.data.copy()
+
+    if obj_src.data.shape_keys == None: # ここなおした
+        #if object has no shapekeys, just apply modifier
+        bpy.context.scene.objects.active = obj_src
+        for x in target_modifiers:
+            try:
+                bpy.ops.object.modifier_apply(modifier=x)
+            except RuntimeError:
+                pass
+        return True
+
+    obj_fin = Clone_Object(obj_src)
+
+    bpy.context.scene.objects.active = obj_fin
+    Clear_Shape_Keys('Basis')
+
+    if target_modifiers == None:
+        target_modifiers = []
+        for x in obj_fin.modifiers:
+            if x.show_viewport:
+                target_modifiers.append(x.name)
+
+    for x in target_modifiers:
+        try:
+            bpy.ops.object.modifier_apply(modifier=x)
+        except RuntimeError:
+            pass
+
+    flag_onError = False
+    list_skipped = []
+
+    for i in range(1, len(obj_src.data.shape_keys.key_blocks)):
+        tmp_name = obj_src.data.shape_keys.key_blocks[i].name
+        obj_tmp = Clone_Object(obj_src)
+
+        bpy.context.scene.objects.active = obj_tmp
+        Clear_Shape_Keys(tmp_name)
+
+        for x in target_modifiers:
+            try:
+                bpy.ops.object.modifier_apply(modifier=x)
+            except RuntimeError:
+                pass
+
+        obj_tmp.select = True
+        bpy.context.scene.objects.active = obj_fin
+        try:
+            bpy.ops.object.join_shapes()
+            obj_fin.data.shape_keys.key_blocks[-1].name = tmp_name
+        except:
+            flag_onError = True
+            list_skipped.append(tmp_name)
+
+
+        Delete_Object(obj_tmp)
+
+    if flag_onError:
+        def draw(self, context):
+            self.layout.label("Vertex Count Disagreement! Some shapekeys skipped.")
+            for s in list_skipped:
+                self.layout.label(s)
+
+        bpy.context.window_manager.popup_menu(draw, title="Error", icon='INFO')
+
+        return False
+
+    tmp_name = obj_src.name
+    tmp_data_name = obj_src.data.name
+    obj_fin.name = tmp_name + '.tmp'
+
+
+    obj_src.data = obj_fin.data
+    obj_src.data.name = tmp_data_name
+
+    for x in target_modifiers:
+        obj_src.modifiers.remove(obj_src.modifiers[x])
+
+    Delete_Object(obj_fin)
+    bpy.context.scene.objects.active = obj_src
+    #obj_src.select = False
+    #obj_src.location[0] += -1

@@ -64,7 +64,7 @@ class GenMat(bpy.types.Operator):
     def join_objects(self, context):
         if context.scene.combine_mode == 'single':
             for obj in context.scene.objects:
-                if obj.type == 'MESH':
+                if obj.type == 'MESH' and obj.name != 'メガネレンズ':
                     obj.select = True
                 else:
                     obj.select = False
@@ -85,12 +85,17 @@ class GenMat(bpy.types.Operator):
         bpy.ops.object.join()
 
     def execute(self, context):
+        self.report({'INFO'}, 'all:{}'.format([obj.name for obj in context.scene.objects]))
+        # single = 1マテリアル＆1オブジェクト
+        # multi = マテリアルを体と服に統合＆最低限のオブジェクト統合のみ
+        # multi3 = マテリアルを体と服に統合＆1オブジェクト
+        # only_obj = 最低限のオブジェクト統合のみ
         if context.scene.combine_mode == 'single':
             self.execute_core(context, context.scene.objects, '結合', (1024, 512))
         elif context.scene.combine_mode == 'multi' or context.scene.combine_mode == 'multi3':
             body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '耳']
             self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], '結合_体', (512, 512))
-            face_object_names = ['口', '眼球', '顔']
+            face_object_names = ['口', '眼球', '顔'] # 顔はもともと1テクスチャ
             # self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_face', (256, 256))
             self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names and obj.name not in face_object_names], '結合_服', (512, 256))
 

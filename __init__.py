@@ -267,7 +267,7 @@ def saved_folder(dummy):
 
 
 class ExecuteMat(Operator):
-    bl_label = 'Combine'
+    bl_label = 'mat=3 obj=最低限統合'
     bl_idname = 'shotariya.execute_mat'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
@@ -297,7 +297,7 @@ class ExecuteMat(Operator):
         return {'FINISHED'}
 
 class ExecuteMat2(Operator):
-    bl_label = 'Combine Single'
+    bl_label = 'mat=1 obj=1裏面含む'
     bl_idname = 'shotariya.execute_mat2'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
@@ -327,7 +327,7 @@ class ExecuteMat2(Operator):
         return {'FINISHED'}
 
 class ExecuteMat3(Operator):
-    bl_label = 'Combine Single Mat 3 Tex'
+    bl_label = 'mat=3 obj=1裏面含まず'
     bl_idname = 'shotariya.execute_mat3'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'
@@ -357,7 +357,7 @@ class ExecuteMat3(Operator):
         return {'FINISHED'}
 
 class ExecuteMat4(Operator):
-    bl_label = 'Combine Objects'
+    bl_label = 'obj=最低限統合'
     bl_idname = 'shotariya.execute_mat4'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'TOOLS'

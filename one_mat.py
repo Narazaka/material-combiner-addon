@@ -100,6 +100,7 @@ class GenMat(bpy.types.Operator):
         return{'FINISHED'}
 
     def execute_core(self, context, objects, texture_name, size, prefix_dir = None):
+        self.report({'INFO'}, 'combine->{}'.format(texture_name))
         start_time = time.time()
         files = []
         broken_materials = []
@@ -217,7 +218,7 @@ class GenMat(bpy.types.Operator):
                     bpy.ops.shotariya.list_actions(action='GENERATE_TEX')
                     self.report({'INFO'}, 'Copies were combined')
                     return {'FINISHED'}
-            self.report({'ERROR'}, 'Nothing to Combine')
+            self.report({'ERROR'}, 'Nothing to Combine {}'.format(files))
             return {'FINISHED'}
         images = sorted([{'w': i.size[0], 'h': i.size[1], 'path': path, 'img': i}
                          for path, i in ((x, Image.open(x).convert('RGBA')) if not isinstance(x, (list,))

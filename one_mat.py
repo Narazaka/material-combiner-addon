@@ -83,6 +83,23 @@ class GenMat(bpy.types.Operator):
                     obj.select = False
         context.scene.objects.active = context.scene.objects['顔']
         bpy.ops.object.join()
+        if context.scene.combine_mode == 'obj_only':
+            select_objs = ['メガネ', 'メガネレンズ']
+            for obj in context.scene.objects:
+                if obj.name in select_objs:
+                    obj.select = True
+                else:
+                    obj.select = False
+            context.scene.objects.active = context.scene.objects['メガネ']
+            bpy.ops.object.join()
+            select_objs = ['アホ毛', '髪・リボン']
+            for obj in context.scene.objects:
+                if obj.name in select_objs:
+                    obj.select = True
+                else:
+                    obj.select = False
+            context.scene.objects.active = context.scene.objects['髪・リボン']
+            bpy.ops.object.join()
 
     def execute(self, context):
         self.report({'INFO'}, 'all:{}'.format([obj.name for obj in context.scene.objects]))

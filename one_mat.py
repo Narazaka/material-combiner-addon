@@ -61,6 +61,17 @@ class GenMat(bpy.types.Operator):
                 self.report({'INFO'}, obj.name + ' apply')
                 Func_Apply_Modifier(self, context, target_object = obj, target_modifiers = ['ミラー'])
 
+    def delete_objects(self, context):
+        if context.scene.combine_mode == 'single':
+            bpy.data.objects.remove(context.scene.objects['メガネレンズ'])
+        else:
+            deletes = []
+            for obj in context.scene.objects:
+                if obj.name.endswith('裏面'):
+                    deletes.append(obj)
+            for obj in deletes:
+                bpy.data.objects.remove(obj)
+
     def join_objects(self, context):
         if context.scene.combine_mode == 'single':
             for obj in context.scene.objects:
@@ -117,6 +128,7 @@ class GenMat(bpy.types.Operator):
             self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names and obj.name not in face_object_names], '結合_服', (512, 256))
 
         self.apply_modifier(context)
+        self.delete_objects(context)
         self.join_objects(context)
 
         return{'FINISHED'}

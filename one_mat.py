@@ -86,7 +86,7 @@ class GenMat(bpy.types.Operator):
                 else:
                     obj.select = True
         else:
-            select_objs = ['口', '耳', '顔', '眼球', '頬']
+            select_objs = ['口', '耳', '顔', '眼球', '頬', '口リップシンク回避用']
             for obj in context.scene.objects:
                 if obj.name in select_objs:
                     obj.select = True
@@ -123,7 +123,7 @@ class GenMat(bpy.types.Operator):
         elif context.scene.combine_mode == 'multi' or context.scene.combine_mode == 'multi3':
             body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '耳']
             self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], '結合_体', (512, 512))
-            face_object_names = ['口', '眼球', '顔', '頬'] # 顔はもともと1テクスチャ
+            face_object_names = ['口', '眼球', '顔', '頬', '口リップシンク回避用'] # 顔はもともと1テクスチャ
             # self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_face', (256, 256))
             self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names and obj.name not in face_object_names], '結合_服', (512, 256))
 

@@ -113,21 +113,21 @@ class GenMat(bpy.types.Operator):
             bpy.ops.object.join()
 
     def execute(self, context):
+        self.apply_modifier(context)
         self.report({'INFO'}, 'all:{}'.format([obj.name for obj in context.scene.objects]))
         # single = 1マテリアル＆1オブジェクト
         # multi = マテリアルを体と服に統合＆最低限のオブジェクト統合のみ
         # multi3 = マテリアルを体と服に統合＆1オブジェクト
         # only_obj = 最低限のオブジェクト統合のみ
         if context.scene.combine_mode == 'single':
-            self.execute_core(context, context.scene.objects, '結合', (1024, 512))
+            self.execute_core(context, context.scene.objects, '結合', (1024, 1024))
         elif context.scene.combine_mode == 'multi' or context.scene.combine_mode == 'multi3':
-            body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '耳']
-            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], '結合_体', (512, 512))
+            body_object_names = ['アホ毛', '髪・リボン', '髪・リボン裏面', '体', '耳', 'plate3', 'plate3-back', 'plate4']
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], '結合_体', (1024, 512))
             face_object_names = ['口', '眼球', '顔', '頬', '口リップシンク回避用'] # 顔はもともと1テクスチャ
             # self.execute_core(context, [obj for obj in context.scene.objects if obj.name in body_object_names], 'combined_face', (256, 256))
-            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names and obj.name not in face_object_names], '結合_服', (512, 256))
+            self.execute_core(context, [obj for obj in context.scene.objects if obj.name not in body_object_names and obj.name not in face_object_names], '結合_服', (512, 512))
 
-        self.apply_modifier(context)
         self.delete_objects(context)
         self.join_objects(context)
 

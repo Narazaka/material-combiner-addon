@@ -73,13 +73,16 @@ class GenMat(bpy.types.Operator):
                 bpy.data.objects.remove(obj)
 
     def join_objects(self, context):
+        rename = False
         if context.scene.combine_mode == 'single':
+            rename = True
             for obj in context.scene.objects:
                 if obj.type == 'MESH' and obj.name != 'メガネレンズ':
                     obj.select = True
                 else:
                     obj.select = False
         elif context.scene.combine_mode == 'multi3':
+            rename = True
             for obj in context.scene.objects:
                 if obj.type != 'MESH' or obj.name.endswith('裏面'):
                     obj.select = False
@@ -94,6 +97,10 @@ class GenMat(bpy.types.Operator):
                     obj.select = False
         context.scene.objects.active = context.scene.objects['顔']
         bpy.ops.object.join()
+        if rename:
+            obj = context.scene.objects['顔']
+            obj.name = 'Body'
+            obj.data.name = 'Body'
         if context.scene.combine_mode == 'obj_only':
             select_objs = ['メガネ', 'メガネレンズ']
             for obj in context.scene.objects:
